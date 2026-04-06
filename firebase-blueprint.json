@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product in the catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "preco": { "type": "string" },
+        "descricao": { "type": "string" },
+        "imagem": { "type": "string" },
+        "categoria": { "type": "string" }
+      },
+      "required": ["id", "nome", "preco", "categoria"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Settings for the storefront",
+      "type": "object",
+      "properties": {
+        "whatsappNumber": { "type": "string" }
+      },
+      "required": ["whatsappNumber"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Products available in the catalog"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Store settings"
+    }
+  }
+}

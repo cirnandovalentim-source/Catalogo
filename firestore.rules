@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: {productId}
+    // Fields:
+    //   - id: string (required)
+    //   - nome: string (required)
+    //   - preco: string (required)
+    //   - descricao: string (optional)
+    //   - imagem: string (optional)
+    //   - categoria: string (required)
+    //
+    // Collection: settings
+    // Document ID: {settingId}
+    // Fields:
+    //   - whatsappNumber: string (required)
+    //
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function isValidProduct() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['id', 'nome', 'preco', 'descricao', 'imagem', 'categoria']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.nome is string && data.nome.size() >= 0 && data.nome.size() < 200 &&
+             data.preco is string && data.preco.size() >= 0 && data.preco.size() < 50 &&
+             data.categoria is string && data.categoria in ['Móveis', 'Alimentação', 'Utilidades para o lar', 'Outros'] &&
+             (!('descricao' in data) || (data.descricao is string && data.descricao.size() < 2000)) &&
+             (!('imagem' in data) || (data.imagem is string && data.imagem.size() < 1048576)); // 1MB limit for base64
+    }
+
+    function isValidSettings() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['whatsappNumber']) &&
+             data.whatsappNumber is string && data.whatsappNumber.size() > 0 && data.whatsappNumber.size() < 20;
+    }
+
+    match /products/{productId} {
+      // For a real app, read should be public, but following strict instructions to require auth initially
+      allow read: if true; // The user explicitly asked for a storefront (public catalog)
+      allow create: if isAuthenticated() && isValidProduct();
+      allow update: if isAuthenticated() && isValidProduct();
+      allow delete: if isAuthenticated();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidSettings();
+      allow update: if isAuthenticated() && isValidSettings();
+      allow delete: if isAuthenticated();
+    }
+    
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
