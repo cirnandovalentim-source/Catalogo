@@ -26,8 +26,32 @@ export function Storefront() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleWhatsAppClick = (product: Product) => {
-    const message = `Olá! Tenho interesse no produto: *${product.nome}* (${product.preco}).`;
+  const handleWhatsAppClick = async (product: Product) => {
+    const message = `Olá! Tenho interesse no produto: *${product.nome}*\nPreço: ${product.preco || 'Sob consulta'}\n\n${product.descricao}`;
+    
+    // Try to use the native Web Share API if the product has an image
+    if (product.imagem && navigator.canShare) {
+      try {
+        // Convert base64 to blob
+        const res = await fetch(product.imagem);
+        const blob = await res.blob();
+        const file = new File([blob], 'produto.jpg', { type: 'image/jpeg' });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: product.nome,
+            text: message,
+            files: [file]
+          });
+          return; // Success!
+        }
+      } catch (error) {
+        console.error('Erro ao compartilhar com imagem:', error);
+        // Fallback to text only if sharing fails
+      }
+    }
+
+    // Fallback to standard WhatsApp link (text only)
     const url = `https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
